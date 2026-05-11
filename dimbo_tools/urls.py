@@ -14,6 +14,6 @@ urlpatterns = [
     path('image/resize/', include('apps.image_tools.resize.urls')),
     path('image/transform/', include('apps.image_tools.image_transform.urls')),
     path('image/editor/', include('apps.image_tools.editor.urls')),
-    path('pdf/', include('apps.pdf_tools.urls')),
-    path('pdf-converter/', include('apps.pdf_converter.urls')),
+    path('pdf/', include('apps.toolspdfs.pdf_tools.urls')),
+    path('pdf-converter/', include('apps.toolspdfs.pdf_converter.urls')),
 ]
