@@ -108,6 +108,10 @@
                             <a href="{% url 'pdf_converter:to_word' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
                                 <span class="text-lg">📝</span> <span class="text-sm font-semibold text-slate-700">PDF para Word</span>
                             </a>
+                            <a href="{% url 'pdf_pro:editor_home' %}" class="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition border border-blue-100/50">
+                                <span class="text-lg">🎨</span> <div><p class="text-sm font-bold text-blue-700">Editor Avançado</p><p class="text-[10px] text-blue-500">Com IA e Camadas</p></div>
+                            </a>
+
                         </div>
                     </div>
 
@@ -167,6 +171,9 @@
                         <a href="{% url 'pdf_tools:merge' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>📄</span> Juntar PDFs</a>
                         <a href="{% url 'pdf_tools:split' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>✂️</span> Dividir PDF</a>
                         <a href="{% url 'pdf_converter:to_word' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>📝</span> PDF para Word</a>
+                           <a href="{% url 'pdf_pro:editor_home' %}" class="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 hover:bg-blue-50 text-sm">
+                                <span class="text-lg">🎨</span> <div><p class="text-sm font-bold text-blue-700">Editor Avançado</p><p class="text-[10px] text-blue-500">Com IA e Camadas</p></div>
+                            </a>
                     </div>
                 </div>
 

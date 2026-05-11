@@ -33,12 +33,13 @@ LOCAL_APPS = [
     'apps.analytics',
     "apps.toolspdfs.pdf_tools",
     'apps.toolspdfs.pdf_converter',
+    'apps.toolspdfs.pdf_pro',
     'apps.image_tools.converter',
     'apps.image_tools.compressor', 
     'apps.image_tools.bg_remover',
     'apps.image_tools.resize',
     'apps.image_tools.image_transform',
-     'apps.image_tools.editor',
+    'apps.image_tools.editor',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

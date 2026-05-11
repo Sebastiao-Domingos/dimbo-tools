@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Editor PDF Pro | Dimbo Tools{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<style>
+    .pdf-canvas-area { height: calc(100vh - 160px); background: #e2e8f0; }
+    .page-card { 
+        width: 180px; 
+        aspect-ratio: 1 / 1.41; 
+        background: white; 
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .page-card:hover { transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .sortable-ghost { opacity: 0.3; transform: scale(0.9); }
+    .side-panel { width: 300px; height: calc(100vh - 64px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex bg-slate-100 overflow-hidden">
+    
+    <aside class="side-panel bg-white border-r border-slate-200 p-6 hidden lg:flex flex-col">
+        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">Ferramentas</h3>
+        
+        <nav class="space-y-2">
+            <button onclick="saveChanges()" class="w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                Guardar Ordem
+            </button>
+            <button class="w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                Proteger PDF
+            </button>
+            <button class="w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Marca de Água
+            </button>
+        </nav>
+
+        <div class="mt-auto p-4 bg-slate-50 rounded-2xl">
+            <p class="text-[10px] font-black text-slate-400 uppercase mb-2">Informação</p>
+            <p class="text-sm font-bold text-slate-700 truncate">{{ pdf.name|default:"Sem ficheiro" }}</p>
+            <p class="text-xs text-slate-500">{{ pdf.page_count }} páginas • {{ pdf.size|filesizeformat }}</p>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col">
+        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                {% comment %} <a href="{% url 'accounts:dashboard' %}" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                </a> {% endcomment %}
+                <h2 class="font-bold text-slate-800">Organizar Páginas</h2>
+            </div>
+            
+            {% if not pdf %}
+            <form method="post" enctype="multipart/form-data" class="flex items-center gap-2">
+                {% csrf_token %}
+                <input type="file" name="pdf_file" accept=".pdf" class="text-xs">
+                <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs">Carregar</button>
+            </form>
+            {% endif %}
+        </header>
+
+        <div class="pdf-canvas-area p-10 overflow-y-auto custom-scroll">
+            <div id="page-grid" class="flex flex-wrap gap-8 justify-center">
+                {% for page in pages %}
+                <div class="page-card rounded-lg relative cursor-move flex flex-col items-center justify-center border border-slate-200" data-index="{{ page.index }}">
+                    <span class="absolute top-2 left-2 bg-slate-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold">
+                        {{ page.number }}
+                    </span>
+                    
+                    <div class="text-slate-200 flex flex-col items-center">
+                        <svg class="w-12 h-12" fill="currentColor" viewBox="0 0 20 20"><path d="M4 18h12a2 2 0 002-2V6l-5-5H4a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="text-[10px] font-bold mt-2 uppercase">Página Preview</span>
+                    </div>
+
+                    <button onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-rose-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-rose-600 transition shadow-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                {% empty %}
+                <div class="text-center mt-20">
+                    <div class="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    </div>
+                    <p class="text-slate-500 font-bold">Nenhum ficheiro carregado</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <footer class="h-12 bg-white border-t border-slate-200 px-8 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <div>Dimbo Engine v2.0</div>
+            <div class="flex gap-4">
+                <span class="text-emerald-500">Ligação Segura SSL</span>
+                <span>Auto-save: Off</span>
+            </div>
+        </footer>
+    </main>
+</div>
+
+<script>
+    // Inicializar Sortable para o Grid de Páginas
+    const grid = document.getElementById('page-grid');
+    if (grid) {
+        new Sortable(grid, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function (evt) {
+                console.log("Página movida de " + evt.oldIndex + " para " + evt.newIndex);
+            }
+        });
+    }
+
+    // Função para salvar a nova ordem via API
+    async function saveChanges() {
+        const pages = document.querySelectorAll('.page-card');
+        const newOrder = Array.from(pages).map(p => parseInt(p.getAttribute('data-index')));
+        
+        if (newOrder.length === 0) return alert("Nenhuma página para salvar.");
+
+        const response = await fetch("{% if pdf %}{% url 'pdf_pro:api_update' pdf.id %}{% endif %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                type: 'REORDER',
+                pages: newOrder
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success') {
+            alert("Ordem das páginas atualizada com sucesso!");
+            window.location.reload();
+        } else {
+            alert("Erro: " + data.message);
+        }
+    }
+</script>
+{% endblock %}

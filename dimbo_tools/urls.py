@@ -16,4 +16,5 @@ urlpatterns = [
     path('image/editor/', include('apps.image_tools.editor.urls')),
     path('pdf/', include('apps.toolspdfs.pdf_tools.urls')),
     path('pdf-converter/', include('apps.toolspdfs.pdf_converter.urls')),
+    path('pdf-editor/', include('apps.toolspdfs.pdf_pro.urls')),
 ]
