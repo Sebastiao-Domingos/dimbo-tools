@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Converter PDF para Word - Dimbo Tools{% endblock %}
+
+{% block extra_head %}
+<style>
+  .drag-over { background-color: rgba(79, 70, 229, 0.05); border-color: #4f46e5; }
+  .remove-file-btn:hover { background-color: #fee2e2; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">PDF para Word</h1>
+      <p class="text-gray-500 mt-1">Extraia o conteúdo de um PDF para um documento DOCX editável.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="converterForm">
+      {% csrf_token %}
+
+      <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition hover:border-indigo-400">
+        <input type="file" id="fileInput" name="pdf_file" accept=".pdf" class="hidden" required />
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="mt-2 text-gray-600">Arraste e solte um PDF ou <span class="text-indigo-600 font-medium">clique para seleccionar</span></p>
+        <p class="text-xs text-gray-400 mt-1">Máx. 50 MB. O resultado depende da complexidade do layout.</p>
+      </div>
+
+      <!-- Pré‑visualização -->
+      <div id="previewContainer" class="hidden mt-6 border rounded-xl overflow-hidden bg-gray-50">
+        <div class="flex justify-between items-center p-3 border-b bg-gray-100">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📄</span>
+            <span id="fileName" class="font-medium text-gray-800"></span>
+            <span id="fileSize" class="text-xs text-gray-500"></span>
+          </div>
+          <button type="button" id="clearFileBtn" class="remove-file-btn text-red-600 hover:bg-red-100 p-1 rounded-full transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="p-2 bg-gray-50">
+          <iframe id="pdfPreview" class="w-full h-80 border-0 rounded" title="Pré-visualização do PDF"></iframe>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button type="submit" id="submitBtn" disabled class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Converter para Word
+        </button>
+      </div>
+    </form>
+
+    <div id="progressContainer" class="hidden mt-4">
+      <div class="flex justify-between text-sm text-gray-600 mb-1">
+        <span>A converter...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewContainer = document.getElementById('previewContainer');
+  const fileNameSpan = document.getElementById('fileName');
+  const fileSizeSpan = document.getElementById('fileSize');
+  const pdfPreview = document.getElementById('pdfPreview');
+  const clearBtn = document.getElementById('clearFileBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('converterForm');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const progressPercent = document.getElementById('progressPercent');
+
+  let selectedFile = null;
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') handleFile(file);
+    else alert('Por favor, seleccione um PDF válido.');
+  });
+  fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+  function handleFile(file) {
+    if (file.size > 50 * 1024 * 1024) {
+      alert('O ficheiro excede o limite de 50 MB.');
+      return;
+    }
+    selectedFile = file;
+    fileNameSpan.textContent = file.name;
+    fileSizeSpan.textContent = `(${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+    const fileURL = URL.createObjectURL(file);
+    pdfPreview.src = fileURL;
+    previewContainer.classList.remove('hidden');
+    submitBtn.disabled = false;
+  }
+
+  function clearFile() {
+    if (selectedFile) {
+      URL.revokeObjectURL(pdfPreview.src);
+      selectedFile = null;
+      previewContainer.classList.add('hidden');
+      submitBtn.disabled = true;
+      fileInput.value = '';
+      pdfPreview.src = '';
+    }
+  }
+
+  clearBtn.addEventListener('click', clearFile);
+
+  form.addEventListener('submit', (e) => {
+    if (!selectedFile) {
+      e.preventDefault();
+      return;
+    }
+    submitBtn.disabled = true;
+    progressContainer.classList.remove('hidden');
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      if (progress >= 90) clearInterval(interval);
+      progressBar.style.width = progress + '%';
+      progressPercent.innerText = progress + '%';
+    }, 200);
+  });
+</script>
+{% endblock %}

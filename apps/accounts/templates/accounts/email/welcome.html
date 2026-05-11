@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h2>Bem-vindo ao Dimbo Tools, {{ user.username }}!</h2>
+    <p>Estamos felizes por ter escolhido a nossa plataforma. Comece agora a usar as ferramentas:</p>
+    <ul>
+        <li><a href="{{ site_url }}{% url 'image_converter:converter' %}">Conversor de imagens</a></li>
+        <li><a href="#">Ferramentas PDF</a></li>
+        <li><a href="#">Gerador de CV</a></li>
+    </ul>
+    <p>Qualquer dúvida, responda a este email.</p>
+</body>
+</html>

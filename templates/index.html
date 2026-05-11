@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dimbo Tools | Ferramentas de Produtividade Digital para África{% endblock %}
+
+{% block extra_head %}
+<meta name="robots" content="index, follow">
+<meta name="description" content="Ferramentas digitais: converter imagens, editar PDFs, criar CVs. Grátis e rápido. Para Angola e Portugal.">
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Dimbo Tools",
+  "url": "{{ request.build_absolute_uri }}",
+  "logo": "{{ request.scheme }}://{{ request.get_host }}/static/logo.png",
+  "sameAs": ["https://facebook.com/dimbotools", "https://twitter.com/dimbotools"],
+  "description": "Plataforma de produtividade digital para o mercado lusófono.",
+  "address": { "@type": "PostalAddress", "addressCountry": "AO" }
+}
+</script>
+<style>
+  /* Animações existentes + novas */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes glow {
+    0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+  }
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+  .animate-fade-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+  .hover-glow:hover { animation: glow 0.8s ease-out; }
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  }
+  .card-hover:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 25px 35px -12px rgba(0,0,0,0.25);
+  }
+  .float-animation { animation: float 4s ease-in-out infinite; }
+  @media (max-width: 768px) {
+    .transform.scale-105 { transform: scale(1); }
+  }
+  .stat-number {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Skip to content link para acessibilidade -->
+<a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white text-blue-600 p-2 rounded shadow">Saltar para conteúdo</a>
+
+<!-- Hero Section com ilustração flutuante e melhor gradiente -->
+<section class="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 text-white">
+  <!-- Partículas / fundo decorativo -->
+  <div class="absolute inset-0 opacity-20">
+    <div class="absolute inset-0" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 1px); background-size: 48px 48px;"></div>
+  </div>
+  <!-- Elementos flutuantes (círculos) -->
+  <div class="absolute top-20 left-10 w-32 h-32 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+  <div class="absolute bottom-20 right-10 w-40 h-40 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+    <div class="text-center animate-fade-up">
+      <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+        Produtividade digital
+        <span class="block text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-500">para o futuro de África</span>
+      </h1>
+      <p class="mt-6 text-lg md:text-xl text-indigo-100 max-w-3xl mx-auto">
+        Converta imagens, edite PDFs, crie CVs profissionais e muito mais. Tudo num só lugar, com ferramentas rápidas, seguras e pensadas para si.
+      </p>
+      <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a href="{% url 'image_converter:converter' %}" class="px-8 py-3 bg-white text-indigo-700 font-bold rounded-full shadow-xl hover:bg-gray-100 transition transform hover:scale-105 hover-glow focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" aria-label="Começar a usar ferramentas gratuitamente">
+          Começar Grátis → 
+        </a>
+        <a href="#features" class="px-8 py-3 bg-indigo-600/80 backdrop-blur-sm text-white font-semibold rounded-full border border-indigo-400 shadow-lg hover:bg-indigo-500 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-300" aria-label="Ver todas as ferramentas disponíveis">
+          Ver Ferramentas
+        </a>
+      </div>
+      <p class="mt-6 text-sm text-indigo-200">Sem compromisso • Plano Free com 5 conversões/dia</p>
+    </div>
+    <!-- Mockup ilustrativo (opcional) -->
+    <div class="mt-16 flex justify-center float-animation">
+      <div class="bg-white/5 backdrop-blur-sm rounded-2xl p-2 inline-flex gap-3 border border-white/20">
+        <span class="px-4 py-2 text-sm font-mono text-white">🖼️ PNG → JPG</span>
+        <span class="px-4 py-2 text-sm font-mono text-white">📄 PDF → Word</span>
+        <span class="px-4 py-2 text-sm font-mono text-white">✏️ Gerar CV</span>
+      </div>
+    </div>
+  </div>
+  <!-- Onda decorativa -->
+  <div class="absolute bottom-0 w-full">
+    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path d="M0 64L60 69.3C120 75 240 85 360 80C480 75 600 53 720 48C840 43 960 53 1080 64C1200 75 1320 85 1380 90.7L1440 96V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0V64Z" fill="#f9fafb"/>
+    </svg>
+  </div>
+</section>
+
+<main id="main-content">
+  <!-- Features Section -->
+  <section id="features" class="py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal">
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-800">Ferramentas tudo-em-um</h2>
+        <p class="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">Foco no que realmente importa: rapidez, simplicidade e resultados profissionais.</p>
+      </div>
+      <div class="mt-16 grid md:grid-cols-3 gap-8">
+        <!-- Card 1 -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 card-hover reveal">
+          <div class="w-14 h-14 bg-indigo-100 rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-7 h-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800">Conversor de Imagens</h3>
+          <p class="mt-3 text-gray-600">Suporte a PNG, JPEG, WEBP, BMP, GIF. Redimensione e ajuste a qualidade em segundos.</p>
+          <div class="mt-4 text-sm text-indigo-500 font-medium">+ 5 formatos suportados</div>
+        </div>
+        <!-- Card 2 -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 card-hover reveal">
+          <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800">Ferramentas PDF</h3>
+          <p class="mt-3 text-gray-600">Juntar, dividir, comprimir e proteger PDFs. Rápido, seguro e sem limites.</p>
+          <div class="mt-4 text-sm text-indigo-500 font-medium">+ 6 operações avançadas</div>
+        </div>
+        <!-- Card 3 -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 card-hover reveal">
+          <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center mb-5">
+            <svg class="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800">Gerador de CV</h3>
+          <p class="mt-3 text-gray-600">Crie currícios profissionais com templates modernos. Descarregue em PDF, Word ou imagem.</p>
+          <div class="mt-4 text-sm text-indigo-500 font-medium">+ 10 templates premium</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Como Funciona (Steps) -->
+  <section class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal">
+        <h2 class="text-3xl font-bold text-gray-800">Como funciona?</h2>
+        <p class="mt-2 text-gray-600">Simples, rápido e sem complicações</p>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-8 text-center">
+        <div class="reveal">
+          <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto text-2xl font-bold text-indigo-600">1</div>
+          <h3 class="mt-4 text-xl font-semibold">Faça upload</h3>
+          <p class="mt-2 text-gray-500">Arraste ou seleccione o ficheiro que deseja processar.</p>
+        </div>
+        <div class="reveal">
+          <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto text-2xl font-bold text-indigo-600">2</div>
+          <h3 class="mt-4 text-xl font-semibold">Escolha as opções</h3>
+          <p class="mt-2 text-gray-500">Formato destino, qualidade, redimensionamento, etc.</p>
+        </div>
+        <div class="reveal">
+          <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto text-2xl font-bold text-indigo-600">3</div>
+          <h3 class="mt-4 text-xl font-semibold">Converta e descarregue</h3>
+          <p class="mt-2 text-gray-500">Clique em converter e o ficheiro estará pronto em segundos.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Estatísticas com contador animado -->
+  <section class="bg-gradient-to-r from-indigo-50 to-blue-50 py-12 border-y border-indigo-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-3 gap-8 text-center">
+        <div class="reveal">
+          <div class="text-5xl font-extrabold text-indigo-600 stat-number" id="stat-users">0</div>
+          <p class="text-gray-700 mt-2 font-medium">Utilizadores activos</p>
+        </div>
+        <div class="reveal">
+          <div class="text-5xl font-extrabold text-indigo-600 stat-number" id="stat-files">0</div>
+          <p class="text-gray-700 mt-2 font-medium">Ficheiros processados</p>
+        </div>
+        <div class="reveal">
+          <div class="text-5xl font-extrabold text-indigo-600">4.9★</div>
+          <p class="text-gray-700 mt-2 font-medium">Avaliação média (200+ reviews)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Depoimentos (Testemunhos) -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal">
+        <h2 class="text-3xl font-bold text-gray-800">O que dizem os utilizadores</h2>
+        <p class="mt-2 text-gray-600">Mais de 500 profissionais confiam no Dimbo Tools</p>
+      </div>
+      <div class="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-xl shadow-md reveal card-hover">
+          <div class="flex items-center gap-1 text-yellow-400 mb-3">★★★★★</div>
+          <p class="text-gray-600">"O conversor de imagens é impressionante! Levo segundos e fica perfeito. Recomendo a todos os designers."</p>
+          <div class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 font-bold">MJ</div>
+            <div><span class="font-semibold">Maria João</span><span class="text-xs text-gray-500 block">Designer Gráfica, Luanda</span></div>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md reveal card-hover">
+          <div class="flex items-center gap-1 text-yellow-400 mb-3">★★★★★</div>
+          <p class="text-gray-600">"As ferramentas de PDF salvaram-me horas de trabalho. Dividir e juntar documentos nunca foi tão fácil."</p>
+          <div class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold">PC</div>
+            <div><span class="font-semibold">Paulo Chaves</span><span class="text-xs text-gray-500 block">Advogado, Benguela</span></div>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md reveal card-hover">
+          <div class="flex items-center gap-1 text-yellow-400 mb-3">★★★★★</div>
+          <p class="text-gray-600">"O gerador de CV é fantástico! Consegui um emprego graças ao layout profissional. Muito obrigado!"</p>
+          <div class="mt-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold">FS</div>
+            <div><span class="font-semibold">Fátima Silva</span><span class="text-xs text-gray-500 block">Recém-graduada, Huíla</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Planos com melhor visual -->
+  <section id="pricing" class="py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal">
+        <h2 class="text-3xl font-bold text-gray-800">Planos para todos os perfis</h2>
+        <p class="mt-2 text-gray-600">Comece grátis e escale conforme a sua necessidade</p>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-8">
+        <div class="bg-gray-50 rounded-2xl shadow-md p-6 border border-gray-200 card-hover reveal">
+          <h3 class="text-2xl font-bold text-gray-800">Free</h3>
+          <p class="mt-4 text-4xl font-black">0 Kz<span class="text-base font-normal text-gray-500">/mês</span></p>
+          <ul class="mt-6 space-y-3">
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>5 conversões/dia</li>
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Resolução standard</li>
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Suporte por email</li>
+          </ul>
+          <a href="{% url 'accounts:register' %}" class="mt-8 block text-center bg-indigo-100 text-indigo-700 font-semibold py-2 rounded-lg hover:bg-indigo-200 transition">Começar grátis</a>
+        </div>
+        <div class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-xl p-6 border-2 border-indigo-500 relative card-hover md:scale-105 reveal">
+          <div class="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 rounded-bl-xl text-sm font-bold shadow-md">🔥 Popular</div>
+          <h3 class="text-2xl font-bold text-gray-800">Pro</h3>
+          <p class="mt-4 text-4xl font-black">5.000 Kz<span class="text-base font-normal text-gray-500">/mês</span></p>
+          <ul class="mt-6 space-y-3">
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Conversões ilimitadas</li>
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Alta resolução</li>
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Prioridade no suporte</li>
+          </ul>
+          <a href="{% url 'accounts:register' %}" class="mt-8 block text-center bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition shadow-md">Assinar Pro</a>
+        </div>
+        <div class="bg-gray-50 rounded-2xl shadow-md p-6 border border-gray-200 card-hover reveal">
+          <h3 class="text-2xl font-bold text-gray-800">Business</h3>
+          <p class="mt-4 text-4xl font-black">Sob consulta</p>
+          <ul class="mt-6 space-y-3">
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Equipas multiutilizador</li>
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>API personalizada</li>
+            <li class="flex items-center"><svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>Suporte 24/7</li>
+          </ul>
+          <a href="#" class="mt-8 block text-center bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg hover:bg-gray-300 transition">Contactar vendas</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ simples -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal">
+        <h2 class="text-3xl font-bold text-gray-800">Perguntas frequentes</h2>
+      </div>
+      <div class="mt-8 space-y-4">
+        <details class="bg-white rounded-xl shadow-sm p-4 reveal">
+          <summary class="font-semibold text-gray-800 cursor-pointer">Preciso de criar conta para usar?</summary>
+          <p class="mt-2 text-gray-600">Sim, é necessário registo para controlar o limite diário e histórico. O processo leva menos de 1 minuto.</p>
+        </details>
+        <details class="bg-white rounded-xl shadow-sm p-4 reveal">
+          <summary class="font-semibold text-gray-800 cursor-pointer">Os meus ficheiros ficam guardados nos vossos servidores?</summary>
+          <p class="mt-2 text-gray-600">Não. Processamos os ficheiros em tempo real e eliminamos imediatamente após a conversão. Privacidade total.</p>
+        </details>
+        <details class="bg-white rounded-xl shadow-sm p-4 reveal">
+          <summary class="font-semibold text-gray-800 cursor-pointer">Quais os métodos de pagamento aceites?</summary>
+          <p class="mt-2 text-gray-600">Aceitamos cartões Visa/Mastercard, Multicaixa Express (Angola) e transferência bancária para empresas.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action Final com formulário de newsletter melhorado -->
+  <section class="bg-gradient-to-r from-indigo-800 to-purple-800 text-white py-20">
+    <div class="max-w-4xl mx-auto text-center px-4">
+      <h2 class="text-4xl md:text-5xl font-extrabold">Pronto para aumentar a sua produtividade?</h2>
+      <p class="mt-4 text-xl text-indigo-100">Junte-se a centenas de utilizadores que confiam no Dimbo Tools.</p>
+      <div class="mt-10 flex flex-col sm:flex-row justify-center gap-4">
+        <a href="{% url 'accounts:register' %}" class="inline-block px-8 py-4 bg-white text-indigo-700 font-bold rounded-xl shadow-xl hover:bg-gray-100 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-white">
+          Criar conta gratuita → 
+        </a>
+        <form action="#" method="post" class="flex flex-col sm:flex-row gap-3">
+          {% csrf_token %}
+          <input type="email" name="newsletter_email" placeholder="Seu melhor email" class="px-5 py-4 rounded-xl text-gray-800 w-72 focus:outline-none focus:ring-2 focus:ring-amber-400" required aria-label="Receber novidades por email">
+          <button type="submit" class="px-6 py-4 bg-amber-500 text-indigo-900 font-bold rounded-xl hover:bg-amber-400 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-300">📧 Receber novidades</button>
+        </form>
+      </div>
+      <p class="mt-6 text-sm text-indigo-200">Sem spam. Pode cancelar a qualquer momento.</p>
+    </div>
+  </section>
+</main>
+
+<!-- Botão Voltar ao Topo -->
+<button id="backToTop" class="fixed bottom-6 right-6 bg-indigo-600 text-white p-3 rounded-full shadow-xl hover:bg-indigo-700 transition focus:outline-none focus:ring-2 focus:ring-indigo-400 hidden z-50" aria-label="Voltar ao topo">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+  </svg>
+</button>
+
+<script>
+  // Contador animado com Intersection Observer
+  function animateCounter(element, target, duration = 1500) {
+    let start = 0;
+    const step = Math.ceil(target / (duration / 30));
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= target) {
+        element.innerText = target.toLocaleString();
+        clearInterval(timer);
+      } else {
+        element.innerText = start.toLocaleString();
+      }
+    }, 30);
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const usersEl = document.getElementById('stat-users');
+        const filesEl = document.getElementById('stat-files');
+        if (usersEl && usersEl.innerText === '0') animateCounter(usersEl, 528);
+        if (filesEl && filesEl.innerText === '0') animateCounter(filesEl, 12450);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  const statsSection = document.querySelector('.bg-gradient-to-r');
+  if (statsSection) observer.observe(statsSection);
+
+  // Scroll reveal (fade in)
+  const reveals = document.querySelectorAll('.reveal');
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => revealObserver.observe(el));
+
+  // Botão Voltar ao Topo
+  const backBtn = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 300) {
+      backBtn.classList.remove('hidden');
+    } else {
+      backBtn.classList.add('hidden');
+    }
+  });
+  backBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+{% endblock %}

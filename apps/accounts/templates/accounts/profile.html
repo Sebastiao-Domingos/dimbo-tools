@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Meu perfil - Dimbo Tools{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-8 text-white">
+            <div class="flex items-center space-x-4">
+                <div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold">
+                    {{ user.username|slice:":1"|upper }}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">{{ user.get_full_name|default:user.username }}</h1>
+                    <p class="text-blue-100">{{ user.email }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-500 text-sm">Nome de utilizador</label>
+                    <p class="text-gray-800">{{ user.username }}</p>
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm">Email</label>
+                    <p class="text-gray-800">{{ user.email }}</p>
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm">Primeiro nome</label>
+                    <p class="text-gray-800">{{ user.first_name|default:"—" }}</p>
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm">Último nome</label>
+                    <p class="text-gray-800">{{ user.last_name|default:"—" }}</p>
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm">Telefone</label>
+                    <p class="text-gray-800">{{ user.phone|default:"—" }}</p>
+                </div>
+                <div>
+                    <label class="block text-gray-500 text-sm">Conversões hoje</label>
+                    <p class="text-gray-800">{{ user.daily_conversions }} / 5 (plano Free)</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-4 pt-4 border-t">
+                <a href="{% url 'accounts:profile_edit' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">Editar perfil</a>
+                <a href="{% url 'accounts:password_change' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Alterar palavra-passe</a>
+                <a href="{% url 'dashboard:index' %}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

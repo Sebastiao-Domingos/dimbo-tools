@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conversor de Imagens - Dimbo Tools{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Conversor de Imagens</h1>
+        <p class="text-gray-600 mt-2">Converta PNG, JPEG, WEBP, BMP, GIF. Redimensione e ajuste qualidade.</p>
+        {% if user.is_authenticated %}
+            <p class="text-sm text-gray-500 mt-1">Conversões hoje: {{ user.daily_conversions }}/5 (Plano Free)</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        <div class="mb-6">
+            <label class="block text-gray-700 font-semibold mb-2">1. Escolha a imagem</label>
+            <div id="dropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition">
+                <input type="file" id="imageInput" accept="image/*" class="hidden">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p class="mt-2 text-gray-600">Arraste ou clique para selecionar</p>
+                <div id="preview" class="hidden mt-4">
+                    <img id="previewImage" class="max-h-48 mx-auto rounded shadow">
+                    <p id="fileInfo" class="text-sm text-gray-500 mt-2"></p>
+                    <button type="button" id="clearImage" class="text-red-500 text-sm mt-1">Remover</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-gray-700 font-semibold mb-2">Formato de saída</label>
+                <select id="targetFormat" class="w-full border rounded-lg px-4 py-2">
+                    <option value="PNG">PNG</option>
+                    <option value="JPEG">JPEG</option>
+                    <option value="WEBP">WEBP</option>
+                    <option value="BMP">BMP</option>
+                    <option value="GIF">GIF</option>
+                </select>
+            </div>
+            <div id="qualityDiv">
+                <label class="block text-gray-700 font-semibold mb-2">Qualidade <span id="qualityValue">85%</span></label>
+                <input type="range" id="quality" min="1" max="100" value="85" class="w-full">
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="flex items-center space-x-3">
+                <input type="checkbox" id="resizeCheck" class="w-5 h-5 text-blue-600">
+                <span class="text-gray-700 font-semibold">Redimensionar</span>
+            </label>
+            <div id="resizeOptions" class="hidden mt-3 grid md:grid-cols-2 gap-4">
+                <input type="number" id="width" placeholder="Largura (px)" class="border rounded-lg px-4 py-2">
+                <input type="number" id="height" placeholder="Altura (px)" class="border rounded-lg px-4 py-2">
+            </div>
+        </div>
+
+        <button id="convertBtn" disabled class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            Converter Imagem
+        </button>
+    </div>
+
+    <div id="loading" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 text-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-3">A processar...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const imageInput = document.getElementById('imageInput');
+    const previewDiv = document.getElementById('preview');
+    const previewImg = document.getElementById('previewImage');
+    const fileInfo = document.getElementById('fileInfo');
+    const convertBtn = document.getElementById('convertBtn');
+    const loadingDiv = document.getElementById('loading');
+    let currentFile = null;
+
+    dropzone.addEventListener('click', () => imageInput.click());
+    dropzone.addEventListener('dragover', (e) => e.preventDefault());
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) handleFile(file);
+    });
+    imageInput.addEventListener('change', (e) => {
+        if (e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+        currentFile = file;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            previewImg.src = ev.target.result;
+            fileInfo.innerText = `${file.name} (${(file.size/1024).toFixed(2)} KB)`;
+            previewDiv.classList.remove('hidden');
+            convertBtn.disabled = false;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    document.getElementById('clearImage')?.addEventListener('click', () => {
+        currentFile = null;
+        previewDiv.classList.add('hidden');
+        convertBtn.disabled = true;
+        imageInput.value = '';
+    });
+
+    document.getElementById('resizeCheck').addEventListener('change', (e) => {
+        document.getElementById('resizeOptions').classList.toggle('hidden', !e.target.checked);
+    });
+
+    document.getElementById('quality').addEventListener('input', (e) => {
+        document.getElementById('qualityValue').innerText = e.target.value + '%';
+    });
+
+    convertBtn.addEventListener('click', async () => {
+        if (!currentFile) return;
+        const formData = new FormData();
+        formData.append('image', currentFile);
+        formData.append('target_format', document.getElementById('targetFormat').value);
+        formData.append('quality', document.getElementById('quality').value);
+        formData.append('resize', document.getElementById('resizeCheck').checked);
+        if (document.getElementById('resizeCheck').checked) {
+            formData.append('width', document.getElementById('width').value);
+            formData.append('height', document.getElementById('height').value);
+        }
+
+        loadingDiv.classList.remove('hidden');
+        try {
+            const response = await fetch("{% url 'image_converter:converter' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+            });
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Erro na conversão');
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `converted.${document.getElementById('targetFormat').value.toLowerCase()}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            // Recarregar página para atualizar contador
+            window.location.reload();
+        } catch (err) {
+            alert('Erro: ' + err.message);
+        } finally {
+            loadingDiv.classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}

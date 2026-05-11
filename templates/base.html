@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt" x-data="{ mobileMenuOpen: false }">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}Dimbo Tools - Produtividade Digital{% endblock %}</title>
+    
+    <meta name="description" content="Ferramentas digitais: converter imagens, editar PDFs, criar CVs. Grátis e rápido. Para Angola e Portugal.">
+    <meta name="keywords" content="conversor imagens, PDF tools, gerador CV, produtividade, Angola">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        * { font-family: 'Inter', sans-serif; }
+        
+        .page-progress {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: linear-gradient(to right, #2563eb, #a855f7);
+            z-index: 100; transition: width 0.3s ease;
+        }
+
+        .navbar-glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Custom Scrollbar para os dropdowns longos */
+        .dropdown-scroll {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-[#fcfdfe] text-slate-900 antialiased min-h-screen flex flex-col">
+
+    <div id="loading-bar" class="page-progress w-0"></div>
+
+    <nav class="sticky top-0 z-50 navbar-glass border-b border-slate-200/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16 md:h-20">
+                
+                <div class="flex-shrink-0">
+                    <a href="/" class="group flex items-center gap-2">
+                        <span class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-200 group-hover:rotate-6 transition-transform">D</span>
+                        <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                            Dimbo<span class="text-blue-600">Tools</span>
+                        </span>
+                    </a>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-1">
+                    
+                    <div class="relative group" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                        <button class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-blue-600 font-medium flex items-center gap-1 transition-all">
+                            Image Tools
+                            <svg class="w-4 h-4 opacity-50 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="open" x-cloak x-transition class="absolute left-0 mt-1 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 dropdown-scroll">
+                            <a href="{% url 'image_converter:converter' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition">
+                                <span class="text-lg">🖼️</span> <span class="text-sm font-semibold text-slate-700">Converter Imagem</span>
+                            </a>
+                            <a href="{% url 'image_compressor:compress' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition">
+                                <span class="text-lg">🗜️</span> <span class="text-sm font-semibold text-slate-700">Comprimir Imagem</span>
+                            </a>
+                            <a href="{% url 'bg_remover:remover' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition">
+                                <span class="text-lg">✨</span> <span class="text-sm font-semibold text-slate-700">Remover Fundo (IA)</span>
+                            </a>
+                            <a href="{% url 'image_resize:resize' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition">
+                                <span class="text-lg">📏</span> <span class="text-sm font-semibold text-slate-700">Redimensionar</span>
+                            </a>
+                            <a href="{% url 'image_transform:rotate_flip' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition">
+                                <span class="text-lg">🔄</span> <span class="text-sm font-semibold text-slate-700">Rotacionar / Espelhar</span>
+                            </a>
+                            <a href="{% url 'image_transform:crop' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition">
+                                <span class="text-lg">✂️</span> <span class="text-sm font-semibold text-slate-700">Cortar (Crop)</span>
+                            </a>
+                            <a href="{% url 'image_editor:editor' %}" class="flex items-center gap-3 p-3 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition border border-blue-100/50">
+                                <span class="text-lg">🎨</span> <div><p class="text-sm font-bold text-blue-700">Editor Avançado</p><p class="text-[10px] text-blue-500">Com IA e Camadas</p></div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="relative group" x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
+                        <button class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-red-600 font-medium flex items-center gap-1 transition-all">
+                            PDF Tools
+                            <svg class="w-4 h-4 opacity-50 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="open" x-cloak x-transition class="absolute left-0 mt-1 w-64 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 dropdown-scroll">
+                            <a href="{% url 'pdf_tools:merge' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
+                                <span class="text-lg">📄</span> <span class="text-sm font-semibold text-slate-700">Juntar PDFs</span>
+                            </a>
+                            <a href="{% url 'pdf_tools:split' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
+                                <span class="text-lg">✂️</span> <span class="text-sm font-semibold text-slate-700">Dividir PDF</span>
+                            </a>
+                            <a href="{% url 'pdf_tools:protect' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
+                                <span class="text-lg">🔒</span> <span class="text-sm font-semibold text-slate-700">Proteger PDF</span>
+                            </a>
+                            <a href="{% url 'pdf_tools:compress' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
+                                <span class="text-lg">🗜️</span> <span class="text-sm font-semibold text-slate-700">Comprimir PDF</span>
+                            </a>
+                            <a href="{% url 'pdf_converter:to_image' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
+                                <span class="text-lg">🖼️</span> <span class="text-sm font-semibold text-slate-700">PDF para Imagem</span>
+                            </a>
+                            <a href="{% url 'pdf_converter:to_word' %}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-red-50 transition">
+                                <span class="text-lg">📝</span> <span class="text-sm font-semibold text-slate-700">PDF para Word</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard:index' %}" class="px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-blue-600 font-medium transition-all">Dashboard</a>
+                    {% endif %}
+
+                    <div class="h-6 w-px bg-slate-200 mx-4"></div>
+
+                    <div class="flex items-center space-x-3">
+                        {% if user.is_authenticated %}
+                            <div class="relative" x-data="{ userOpen: false }">
+                                <button @click="userOpen = !userOpen" class="flex items-center gap-3 pl-2 pr-4 py-1.5 rounded-full border border-slate-200 hover:border-blue-300 transition-all bg-white shadow-sm">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-400 flex items-center justify-center text-white text-xs font-bold">
+                                        {{ user.username|slice:":1"|upper }}
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-700">{{ user.username }}</span>
+                                </button>
+                                <div x-show="userOpen" @click.away="userOpen = false" x-cloak x-transition class="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50">
+                                    <a href="{% url 'dashboard:index' %}" class="block px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 transition">📊 Dashboard</a>
+                                    <a href="{% url 'accounts:profile' %}" class="block px-5 py-3 text-sm text-slate-600 hover:bg-slate-50 transition border-t border-slate-50">👤 Perfil</a>
+                                    <a href="{% url 'accounts:logout' %}" class="block px-5 py-3 text-sm text-red-600 hover:bg-red-50 font-medium transition border-t border-slate-50">🚪 Sair</a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'accounts:login' %}" class="text-sm font-semibold text-slate-600 hover:text-blue-600 px-4 transition">Entrar</a>
+                            <a href="{% url 'accounts:register' %}" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all">
+                                Criar conta
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-xl bg-slate-50 text-slate-600">
+                    <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    <svg x-show="mobileMenuOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div x-show="mobileMenuOpen" x-cloak x-transition class="md:hidden bg-white border-b border-slate-100 max-h-[80vh] overflow-y-auto">
+            <div class="px-4 pt-2 pb-8 space-y-6">
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">📷 Image Tools</p>
+                    <div class="grid grid-cols-1 gap-1">
+                        <a href="{% url 'image_converter:converter' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>🖼️</span> Converter</a>
+                        <a href="{% url 'image_compressor:compress' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>🗜️</span> Comprimir</a>
+                        <a href="{% url 'bg_remover:remover' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>✨</span> Remover Fundo</a>
+                        <a href="{% url 'image_resize:resize' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>📏</span> Redimensionar</a>
+                        <a href="{% url 'image_editor:editor' %}" class="flex items-center gap-3 p-3 rounded-xl bg-blue-50 font-bold text-blue-700 text-sm"><span>🎨</span> Editor Avançado</a>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-2 mb-2">📄 PDF Tools</p>
+                    <div class="grid grid-cols-1 gap-1">
+                        <a href="{% url 'pdf_tools:merge' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>📄</span> Juntar PDFs</a>
+                        <a href="{% url 'pdf_tools:split' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>✂️</span> Dividir PDF</a>
+                        <a href="{% url 'pdf_converter:to_word' %}" class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-sm"><span>📝</span> PDF para Word</a>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100">
+                    {% if not user.is_authenticated %}
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="{% url 'accounts:login' %}" class="text-center py-3 rounded-xl font-bold text-slate-600 bg-slate-50">Entrar</a>
+                            <a href="{% url 'accounts:register' %}" class="text-center bg-blue-600 text-white py-3 rounded-xl font-bold">Criar Conta</a>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'dashboard:index' %}" class="block p-3 rounded-xl bg-slate-50 mb-2">📊 Dashboard</a>
+                        <a href="{% url 'accounts:logout' %}" class="block w-full text-center text-red-600 font-bold py-3">Sair</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow pt-6">
+        <div class="max-w-7xl mx-auto px-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-4 flex items-center justify-between p-4 rounded-2xl border animate-fade-in
+                        {% if message.tags == 'success' %}bg-emerald-50 border-emerald-100 text-emerald-800
+                        {% elif message.tags == 'error' %}bg-rose-50 border-rose-100 text-rose-800
+                        {% else %}bg-blue-50 border-blue-100 text-blue-800{% endif %}">
+                        <div class="flex items-center gap-3 text-sm font-medium">
+                            <span>{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="opacity-50 hover:opacity-100 text-xl">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-white border-t border-slate-100 pt-16 pb-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-2 md:col-span-1">
+                    <span class="text-xl font-black text-slate-800">Dimbo<span class="text-blue-600">Tools</span></span>
+                    <p class="mt-4 text-sm text-slate-500 leading-relaxed">As melhores ferramentas online para o mercado lusófono.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-4 uppercase text-[10px] tracking-widest">Produto</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="{% url 'image_converter:converter' %}" class="hover:text-blue-600">Imagens</a></li>
+                        <li><a href="{% url 'pdf_tools:merge' %}" class="hover:text-blue-600">PDF Tools</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-4 uppercase text-[10px] tracking-widest">Empresa</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="#" class="hover:text-blue-600 transition">Sobre</a></li>
+                        <li><a href="#" class="hover:text-blue-600 transition">Privacidade</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-4 uppercase text-[10px] tracking-widest">Contacto</h4>
+                    <p class="text-xs text-slate-400">suporte@dimbotools.com</p>
+                </div>
+            </div>
+            <div class="border-t border-slate-50 pt-8 text-center">
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                    &copy; {% now "Y" %} Dimbo Tools. Feito em Angola 🇦🇴
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        window.addEventListener('beforeunload', () => { document.getElementById('loading-bar').style.width = '60%'; });
+        window.addEventListener('load', () => { 
+            document.getElementById('loading-bar').style.width = '100%';
+            setTimeout(() => { document.getElementById('loading-bar').style.width = '0'; }, 500);
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

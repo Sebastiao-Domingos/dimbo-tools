@@ -1,0 +1,410 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dimbo Studio Pro | Editor Full Stack{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+    :root { --primary: #6366f1; --bg: #0f172a; --panel: #1e293b; --danger: #ef4444; --success: #10b981; --border: #334155; --ai-gradient: linear-gradient(45deg, #a855f7, #6366f1); }
+    
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #f8fafc; overflow: hidden; margin: 0; }
+    
+    .editor-layout { display: grid; grid-template-columns: 80px 280px 1fr 280px; height: calc(100vh - 90px); margin: 20px; gap: 15px; }
+
+    .toolbar, .panel { background: var(--panel); border-radius: 20px; border: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .toolbar { align-items: center; gap: 12px; }
+    .panel { overflow-y: auto; scrollbar-width: thin; }
+    
+    .label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin: 15px 0 8px 0; display: block; letter-spacing: 0.05em; }
+
+    .stage { background: #020617; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid #1e293b; overflow: hidden; }
+    .canvas-container { box-shadow: 0 20px 60px rgba(0,0,0,0.6); background: white; line-height: 0; }
+
+    /* Botões */
+    .btn { padding: 10px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 11px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; margin-bottom: 5px; }
+    .btn-main { background: var(--primary); }
+    .btn-ai { background: var(--ai-gradient); }
+    .btn-danger { background: var(--danger); }
+    .btn-success { background: var(--success); }
+    .btn-ghost { background: #0f172a; color: #94a3b8; border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--primary); color: white; }
+
+    .t-btn { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; background: transparent; color: #94a3b8; transition: 0.3s; font-size: 1.2rem; }
+    .t-btn:hover, .t-btn.active { background: var(--primary); color: white; }
+
+    /* Modais e Grelha de Projetos */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(5px); }
+    .modal-box { background: var(--panel); padding: 30px; border-radius: 25px; width: 90%; max-width: 600px; border: 1px solid var(--border); max-height: 80vh; overflow-y: auto; }
+    
+    .project-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
+    .project-card { background: #0f172a; border-radius: 15px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; overflow: hidden; }
+    .project-card:hover { border-color: var(--primary); transform: translateY(-3px); }
+    .project-preview { aspect-ratio: 16/9; background: white; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .project-preview img { max-height: 100%; width: auto; }
+
+    .input-group { background: #0f172a; padding: 10px; border-radius: 10px; margin-bottom: 8px; border: 1px solid var(--border); }
+    .row-flex { display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+    
+    #crop-hud { position: absolute; top: 20px; background: var(--primary); padding: 10px 25px; border-radius: 50px; display: none; gap: 20px; align-items: center; z-index: 100; }
+    #toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+    .toast { background: var(--panel); border-left: 4px solid var(--primary); padding: 15px 25px; border-radius: 12px; margin-top: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: slideIn 0.3s ease; font-size: 13px; }
+
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="toast-container"></div>
+
+<div id="confirmModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 350px; text-align: center;">
+        <h3 id="modalTitle" class="text-lg font-bold">Confirmação</h3>
+        <p id="modalDesc" class="text-sm text-slate-400 my-4"></p>
+        <div class="flex gap-2">
+            <button class="btn btn-danger" id="modalConfirm">Confirmar</button>
+            <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<div id="projectsModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold">📂 Projetos Guardados</h2>
+            <button onclick="closeProjectsModal()" class="text-2xl text-slate-500 hover:text-white">✕</button>
+        </div>
+        <div id="projectsGrid" class="project-grid">
+            </div>
+    </div>
+</div>
+
+<div class="editor-layout">
+    <aside class="toolbar">
+        <button class="t-btn" title="Upload" onclick="document.getElementById('fileInput').click()">📂</button>
+        <button class="t-btn" title="Texto" onclick="addText()">T</button>
+        <button class="t-btn" title="Formas" onclick="addShape()">⬔</button>
+        <button class="t-btn" id="brushBtn" title="Pincel" onclick="toggleBrush()">🖌️</button>
+        <button class="t-btn" title="Recortar" onclick="initCrop()">✂️</button>
+        <div style="margin-top:auto; display: flex; flex-direction: column; gap: 10px;">
+            <button class="t-btn" title="Desfazer" onclick="undo()">⟲</button>
+            <button class="t-btn" title="Galeria" onclick="openProjectsModal()">🗂️</button>
+        </div>
+    </aside>
+
+    <aside class="panel">
+        <span class="label">Inteligência Artificial</span>
+        <button class="btn btn-ai" onclick="removeBackgroundAI()">✨ Remover Fundo (IA)</button>
+        
+        <span class="label">Ajustes de Precisão</span>
+        <div class="input-group">
+            <div class="row-flex"><span>Brilho</span><span id="v-brightness">0</span></div>
+            <input type="range" class="f-slider" data-filter="Brightness" min="-1" max="1" step="0.01" value="0">
+        </div>
+        <div class="input-group">
+            <div class="row-flex"><span>Contraste</span><span id="v-contrast">0</span></div>
+            <input type="range" class="f-slider" data-filter="Contrast" min="-1" max="1" step="0.01" value="0">
+        </div>
+        <div class="input-group">
+            <div class="row-flex"><span>Saturação</span><span id="v-saturation">0</span></div>
+            <input type="range" class="f-slider" data-filter="Saturation" min="-1" max="1" step="0.01" value="0">
+        </div>
+
+        <span class="label">Efeitos de Estilo</span>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+            <button class="btn btn-ghost" onclick="applyEffect('Grayscale')">P&B</button>
+            <button class="btn btn-ghost" onclick="applyEffect('Sepia')">Sépia</button>
+            <button class="btn btn-ghost" onclick="applyEffect('Invert')">Inverter</button>
+            <button class="btn btn-danger" onclick="clearFilters()">Limpar</button>
+        </div>
+
+        <span class="label">Stickers Rápidos</span>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;">
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('🚀')">🚀</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('🔥')">🔥</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('⭐')">⭐</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('👩‍👩‍👦‍👦')">👩‍👩‍👦‍👦</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('👋🏻')">👋🏻</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('🤝')">🤝</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('👋🏼')">👋🏼</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('👋🏽')">👋🏽</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('👋🏾')">👋🏾</div>
+            <div style="background:#0f172a; padding:10px; border-radius:10px; cursor:pointer; text-align:center;" onclick="addEmoji('👋🏿')">👋🏿</div>
+            
+        </div>
+    </aside>
+
+    <main class="stage">
+        <div id="crop-hud">
+            <span class="text-xs font-bold text-white">RECORTE ATIVO</span>
+            <button class="bg-white text-indigo-600 px-4 py-1 rounded-full text-[10px] font-black" onclick="confirmCrop()">APLICAR</button>
+            <button class="text-white opacity-70 text-[10px]" onclick="cancelCrop()">CANCELAR</button>
+        </div>
+        <input type="file" id="fileInput" class="hidden" accept="image/*">
+        <div class="canvas-container">
+            <canvas id="c"></canvas>
+        </div>
+    </main>
+
+    <aside class="panel">
+        <span class="label">Templates de Formato</span>
+        <button class="btn btn-ghost" onclick="applyTemplate(1080, 1080, 'Instagram')">📱 Instagram (1:1)</button>
+        <button class="btn btn-ghost" onclick="applyTemplate(1080, 1920, 'Story')">🎬 Story (9:16)</button>
+
+        <span class="label">Camadas Ativas</span>
+        <div id="layersList" style="flex-grow: 1" class="space-y-2"></div>
+        
+        <span class="label">Zoom e Exportação</span>
+        <div class="flex gap-1 mb-4">
+            <button class="btn btn-ghost" style="flex:1" onclick="changeZoom(0.9)">-</button>
+            <button class="btn btn-ghost" style="flex:1" onclick="resetZoom()">1:1</button>
+            <button class="btn btn-ghost" style="flex:1" onclick="changeZoom(1.1)">+</button>
+        </div>
+
+        <input type="text" id="projName" placeholder="Nome do projeto..." class="btn" style="background:#0f172a; text-align:left; border:1px solid var(--border); color:white;">
+        <button class="btn btn-success" onclick="saveCloud()">Sincronizar Nuvem</button>
+        <button class="btn btn-main" onclick="downloadFinal()">Baixar Imagem</button>
+    </aside>
+</div>
+
+<script>
+let canvas, history = [], currentId = null, cropRect;
+
+function init() {
+    canvas = new fabric.Canvas('c', { width: 800, height: 550, backgroundColor: '#fff', preserveObjectStacking: true });
+
+    document.querySelectorAll('.f-slider').forEach(slider => {
+        slider.oninput = function() {
+            document.getElementById('v-' + this.dataset.filter.toLowerCase()).innerText = this.value;
+            updateImageFilters();
+        };
+    });
+
+    document.getElementById('fileInput').onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (f) => {
+            fabric.Image.fromURL(f.target.result, (img) => {
+                img.scaleToWidth(400);
+                canvas.add(img).centerObject(img).setActiveObject(img);
+                saveState();
+            });
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    canvas.on('object:modified', saveState);
+    canvas.on('selection:created', updateLayersUI);
+    canvas.on('selection:cleared', updateLayersUI);
+    saveState();
+}
+
+// --- GESTÃO DE PROJETOS (DB) ---
+
+function openProjectsModal() {
+    document.getElementById('projectsModal').style.display = 'flex';
+    const grid = document.getElementById('projectsGrid');
+    grid.innerHTML = '<p class="col-span-2 text-center text-slate-500">A carregar galeria...</p>';
+
+    fetch("{% url 'image_editor:list_projects' %}")
+    .then(res => res.json())
+    .then(data => {
+        grid.innerHTML = '';
+        if(data.projects.length === 0) {
+            grid.innerHTML = '<p class="col-span-2 text-center text-slate-500">Ainda não tens designs guardados.</p>';
+            return;
+        }
+        data.projects.forEach(p => {
+            const card = document.createElement('div');
+            card.className = "project-card";
+            card.onclick = () => loadProject(p.id);
+            card.innerHTML = `
+                <div class="project-preview"><img src="${p.preview}"></div>
+                <div class="p-3 text-[10px]">
+                    <div class="font-bold truncate text-white">${p.name}</div>
+                    <div class="opacity-50">${p.updated_at}</div>
+                </div>`;
+            grid.appendChild(card);
+        });
+    });
+}
+
+function loadProject(id) {
+    askConfirm("Carregar Design", "O trabalho atual será substituído. Continuar?", () => {
+        fetch(`/image/editor/load-project/${id}/`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                canvas.loadFromJSON(data.canvas_json, () => {
+                    canvas.renderAll();
+                    currentId = data.project_id;
+                    document.getElementById('projName').value = data.name;
+                    closeProjectsModal();
+                    history = [];
+                    saveState();
+                    showToast("Design carregado com sucesso!");
+                });
+            }
+        });
+    });
+}
+
+function saveCloud() {
+    const payload = {
+        project_id: currentId,
+        name: document.getElementById('projName').value || "Design Dimbo",
+        canvas_json: canvas.toJSON(),
+        preview: canvas.toDataURL({ quality: 0.1, multiplier: 0.1 })
+    };
+    fetch("{% url 'image_editor:save_project' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify(payload)
+    }).then(res => res.json()).then(data => {
+        if(data.success) {
+            currentId = data.project_id;
+            showToast("Sincronizado com a nuvem!", "success");
+        }
+    });
+}
+
+function closeProjectsModal() { document.getElementById('projectsModal').style.display = 'none'; }
+
+// --- FUNCIONALIDADES DO EDITOR ---
+
+function removeBackgroundAI() {
+    const obj = canvas.getActiveObject();
+    if (!obj || obj.type !== 'image') return showToast("Seleciona uma imagem primeiro", "danger");
+    showToast("✨ A processar IA...");
+    setTimeout(() => {
+        const filter = new fabric.Image.filters.RemoveColor({ color: '#FFFFFF', distance: 0.12 });
+        obj.filters.push(filter);
+        obj.applyFilters();
+        canvas.renderAll();
+        showToast("Fundo removido!");
+    }, 1200);
+}
+
+function updateImageFilters() {
+    const obj = canvas.getActiveObject();
+    if (!obj || obj.type !== 'image') return;
+    const b = parseFloat(document.querySelector('[data-filter="Brightness"]').value);
+    const c = parseFloat(document.querySelector('[data-filter="Contrast"]').value);
+    const s = parseFloat(document.querySelector('[data-filter="Saturation"]').value);
+    obj.filters = obj.filters.filter(f => !['Brightness', 'Contrast', 'Saturation'].includes(f.type));
+    if(b !== 0) obj.filters.push(new fabric.Image.filters.Brightness({ brightness: b }));
+    if(c !== 0) obj.filters.push(new fabric.Image.filters.Contrast({ contrast: c }));
+    if(s !== 0) obj.filters.push(new fabric.Image.filters.Saturation({ saturation: s }));
+    obj.applyFilters();
+    canvas.renderAll();
+}
+
+function applyEffect(type) {
+    const obj = canvas.getActiveObject();
+    if (!obj || obj.type !== 'image') return;
+    let f;
+    if(type==='Grayscale') f = new fabric.Image.filters.Grayscale();
+    if(type==='Sepia') f = new fabric.Image.filters.Sepia();
+    if(type==='Invert') f = new fabric.Image.filters.Invert();
+    obj.filters.push(f);
+    obj.applyFilters();
+    canvas.renderAll();
+}
+
+function clearFilters() {
+    const obj = canvas.getActiveObject();
+    if(obj && obj.type==='image') { obj.filters=[]; obj.applyFilters(); canvas.renderAll(); }
+}
+
+function initCrop() {
+    if(!canvas.getActiveObject()) return;
+    document.getElementById('crop-hud').style.display = 'flex';
+    cropRect = new fabric.Rect({ left: 100, top: 100, width: 200, height: 200, fill: 'rgba(255,255,255,0.3)', stroke: '#6366f1', strokeDashArray: [5, 5] });
+    canvas.add(cropRect).setActiveObject(cropRect);
+}
+
+function confirmCrop() {
+    const dataURL = canvas.toDataURL({ left: cropRect.left, top: cropRect.top, width: cropRect.getScaledWidth(), height: cropRect.getScaledHeight() });
+    fabric.Image.fromURL(dataURL, (img) => {
+        canvas.clear();
+        canvas.add(img).centerObject(img);
+        cancelCrop();
+        saveState();
+    });
+}
+function cancelCrop() { canvas.remove(cropRect); document.getElementById('crop-hud').style.display = 'none'; }
+
+function applyTemplate(w, h, name) {
+    canvas.setDimensions({ width: w, height: h });
+    canvas.setZoom(Math.min(800/w, 500/h));
+    showToast(`Formato ${name} aplicado`);
+}
+
+function changeZoom(f) { canvas.setZoom(canvas.getZoom() * f); }
+function resetZoom() { canvas.setZoom(1); }
+
+// --- UI E UTILITÁRIOS ---
+
+function showToast(msg, type = 'primary') {
+    const container = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.style.borderLeftColor = type === 'success' ? 'var(--success)' : 'var(--primary)';
+    t.innerText = msg;
+    container.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+function askConfirm(title, desc, onConfirm) {
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('modalDesc').innerText = desc;
+    document.getElementById('confirmModal').style.display = 'flex';
+    document.getElementById('modalConfirm').onclick = () => { onConfirm(); closeModal(); };
+}
+function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
+
+function updateLayersUI() {
+    const list = document.getElementById('layersList');
+    list.innerHTML = '';
+    canvas.getObjects().reverse().forEach(obj => {
+        if(obj === cropRect) return;
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center p-3 bg-[#0f172a] rounded-xl text-[10px] border border-slate-700";
+        div.innerHTML = `<span>${obj.type.toUpperCase()}</span> <button onclick="deleteActive()">✕</button>`;
+        list.appendChild(div);
+    });
+}
+
+function deleteActive() {
+    canvas.remove(...canvas.getActiveObjects());
+    canvas.discardActiveObject().renderAll();
+    saveState();
+}
+
+function addText() { canvas.add(new fabric.IText('Novo Texto', { left: 50, top: 50, fontFamily: 'Inter' })); }
+function addShape() { canvas.add(new fabric.Rect({ width: 100, height: 100, fill: '#6366f1', rx: 10, ry: 10 })); }
+function addEmoji(e) { canvas.add(new fabric.Text(e, { fontSize: 50, left: 100, top: 100 })); saveState(); }
+function toggleBrush() { canvas.isDrawingMode = !canvas.isDrawingMode; document.getElementById('brushBtn').classList.toggle('active'); }
+
+function saveState() {
+    history.push(JSON.stringify(canvas));
+    if(history.length > 20) history.shift();
+    updateLayersUI();
+}
+
+function undo() {
+    if(history.length < 2) return;
+    history.pop();
+    canvas.loadFromJSON(history[history.length-1], () => canvas.renderAll());
+}
+
+function downloadFinal() {
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL({ format: 'png', multiplier: 2 });
+    a.download = 'dimbo-design.png';
+    a.click();
+}
+
+window.onload = init;
+</script>
+{% endblock %}

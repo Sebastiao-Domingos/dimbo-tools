@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Juntar PDFs - Dimbo Tools{% endblock %}
+
+{% block extra_head %}
+<style>
+  .drag-over { background-color: rgba(79, 70, 229, 0.05); border-color: #4f46e5; }
+  .file-item:hover { background-color: #f9fafb; }
+  .result-thumb {
+    transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .result-thumb:hover {
+    transform: scale(1.05);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">Juntar PDFs</h1>
+      <p class="text-gray-500 mt-1">Seleccione vários ficheiros PDF e combine‑os num só documento.</p>
+    </div>
+
+    <form id="mergeForm" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- Área de upload com drag & drop -->
+      <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition hover:border-indigo-400">
+        <input type="file" id="fileInput" name="pdf_files" multiple accept=".pdf" class="hidden" required />
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="mt-2 text-gray-600">Arraste e solte PDFs aqui ou <span class="text-indigo-600 font-medium">clique para seleccionar</span></p>
+        <p class="text-xs text-gray-400 mt-1">Suporta múltiplos ficheiros PDF (máx. 20 ficheiros)</p>
+      </div>
+
+      <!-- Lista de ficheiros seleccionados -->
+      <div id="fileList" class="mt-4 space-y-2"></div>
+
+      <div class="mt-6">
+        <button type="submit" id="submitBtn" disabled class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Juntar PDFs
+        </button>
+      </div>
+    </form>
+
+    <!-- Barra de progresso -->
+    <div id="progressContainer" class="hidden mt-4">
+      <div class="flex justify-between text-sm text-gray-600 mb-1">
+        <span>A processar...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-2">
+        <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- Resultado com miniatura clicável -->
+    <div id="resultPanel" class="hidden mt-6 p-4 bg-green-50 rounded-xl border border-green-200">
+      <div class="flex flex-col md:flex-row items-center gap-4">
+        <div class="flex-shrink-0">
+          <img id="resultThumb" class="result-thumb rounded-lg shadow-md border-2 border-white" style="width: 150px; height: auto;" alt="Miniatura do PDF resultante">
+        </div>
+        <div class="flex-grow text-center md:text-left">
+          <p class="font-bold text-green-800">✅ PDFs juntados com sucesso!</p>
+          <p class="text-sm text-gray-600 mt-1">Clique na miniatura ao lado para descarregar o documento combinado.</p>
+          <p class="text-xs text-gray-500 mt-2">
+            Ficheiros combinados: <strong id="numFilesSpan"></strong><br>
+            Tamanho total: <strong id="totalSizeSpan"></strong>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div id="errorMsg" class="hidden mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
+  </div>
+</div>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileListDiv = document.getElementById('fileList');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('mergeForm');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const progressPercent = document.getElementById('progressPercent');
+  const errorMsgDiv = document.getElementById('errorMsg');
+  const resultPanel = document.getElementById('resultPanel');
+  const resultThumb = document.getElementById('resultThumb');
+  const numFilesSpan = document.getElementById('numFilesSpan');
+  const totalSizeSpan = document.getElementById('totalSizeSpan');
+
+  let selectedFiles = [];
+  let lastMergedData = null;
+  let lastFilename = null;
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function showError(msg) {
+    errorMsgDiv.textContent = msg;
+    errorMsgDiv.classList.remove('hidden');
+    setTimeout(() => errorMsgDiv.classList.add('hidden'), 5000);
+  }
+
+  function renderFileList() {
+    fileListDiv.innerHTML = '';
+    selectedFiles.forEach((file, idx) => {
+      const div = document.createElement('div');
+      div.className = 'file-item flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+      div.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-lg">📄</span>
+          <div>
+            <p class="text-sm font-medium text-gray-700">${file.name}</p>
+            <p class="text-xs text-gray-400">${formatFileSize(file.size)}</p>
+          </div>
+        </div>
+        <button type="button" class="remove-file text-red-500 hover:text-red-700 text-sm px-2" data-index="${idx}">Remover</button>
+      `;
+      fileListDiv.appendChild(div);
+    });
+    document.querySelectorAll('.remove-file').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(btn.dataset.index);
+        selectedFiles.splice(idx, 1);
+        renderFileList();
+        updateSubmitButton();
+      });
+    });
+  }
+
+  function addFiles(files) {
+    for (const f of files) {
+      if (selectedFiles.length >= 20) break;
+      if (f.type === 'application/pdf' && !selectedFiles.some(sf => sf.name === f.name && sf.size === f.size)) {
+        selectedFiles.push(f);
+      }
+    }
+    renderFileList();
+    updateSubmitButton();
+    // Esconder resultados anteriores ao carregar novos ficheiros
+    resultPanel.classList.add('hidden');
+    lastMergedData = null;
+  }
+
+  function updateSubmitButton() {
+    submitBtn.disabled = selectedFiles.length < 2;
+  }
+
+  function downloadMerged() {
+    if (!lastMergedData) return;
+    const byteCharacters = atob(lastMergedData);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], {type: 'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = lastFilename || 'merged.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  resultThumb.addEventListener('click', downloadMerged);
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    addFiles(files);
+  });
+  fileInput.addEventListener('change', (e) => addFiles(Array.from(e.target.files)));
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (selectedFiles.length < 2) { showError('Seleccione pelo menos 2 PDFs.'); return; }
+
+    const formData = new FormData();
+    selectedFiles.forEach(file => formData.append('pdf_files', file));
+    submitBtn.disabled = true;
+    progressContainer.classList.remove('hidden');
+    errorMsgDiv.classList.add('hidden');
+    resultPanel.classList.add('hidden');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      if (progress >= 90) clearInterval(interval);
+      progressBar.style.width = progress + '%';
+      progressPercent.innerText = progress + '%';
+    }, 200);
+
+    try {
+      const response = await fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+      });
+      clearInterval(interval);
+      progressBar.style.width = '100%';
+      progressPercent.innerText = '100%';
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erro ao juntar PDFs');
+      if (!data.success) throw new Error(data.error);
+
+      // Guardar dados para download
+      lastMergedData = data.file_data;
+      lastFilename = data.filename;
+
+      // Mostrar miniatura e informações
+      if (data.thumbnail) {
+        resultThumb.src = data.thumbnail;
+      } else {
+        resultThumb.src = 'https://placehold.co/150x200?text=PDF+Preview';
+      }
+      numFilesSpan.textContent = data.num_files;
+      totalSizeSpan.textContent = formatFileSize(data.converted_size);
+      resultPanel.classList.remove('hidden');
+
+      // Opcional: limpar a lista de ficheiros após sucesso? (comentado)
+      // selectedFiles = [];
+      // renderFileList();
+      // updateSubmitButton();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      progressContainer.classList.add('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.innerText = '0%';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}

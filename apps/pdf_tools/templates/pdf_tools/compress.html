@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Comprimir PDF - Dimbo Tools{% endblock %}
+
+{% block extra_head %}
+<style>
+  .drag-over { background-color: rgba(79, 70, 229, 0.05); border-color: #4f46e5; }
+  .remove-file-btn:hover { background-color: #fee2e2; }
+  .result-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800">Comprimir PDF</h1>
+      <p class="text-gray-500 mt-1">Reduza o tamanho do seu PDF. Escolha o nível de compressão.</p>
+    </div>
+
+    <form id="compressForm">
+      {% csrf_token %}
+      <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer transition hover:border-indigo-400">
+        <input type="file" id="fileInput" name="pdf_file" accept=".pdf" class="hidden" required />
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p class="mt-2 text-gray-600">Arraste e solte um PDF ou <span class="text-indigo-600 font-medium">clique para seleccionar</span></p>
+      </div>
+
+      <!-- Pré-visualização do PDF -->
+      <div id="previewContainer" class="hidden mt-6 border rounded-xl overflow-hidden bg-gray-50">
+        <div class="flex justify-between items-center p-3 border-b bg-gray-100">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📄</span>
+            <span id="fileName" class="font-medium text-gray-800"></span>
+            <span id="fileSize" class="text-xs text-gray-500"></span>
+          </div>
+          <button type="button" id="clearFileBtn" class="remove-file-btn text-red-600 hover:bg-red-100 p-1 rounded-full transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <div class="p-2 bg-gray-50">
+          <iframe id="pdfPreview" class="w-full h-80 border-0 rounded" title="Pré-visualização"></iframe>
+        </div>
+      </div>
+
+      <!-- Campo de nível de compressão -->
+      <div id="levelField" class="hidden mt-5">
+        <label class="block font-medium text-gray-700 mb-1">{{ form.compression_level.label }}</label>
+        <select name="compression_level" id="levelSelect" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500">
+          <option value="low">Baixo (tamanho muito pequeno, perde qualidade)</option>
+          <option value="medium" selected>Médio (tamanho moderado, boa qualidade - recomendado)</option>
+          <option value="high">Alto (tamanho maior, mantém qualidade)</option>
+        </select>
+        <p class="text-xs text-gray-400 mt-1">Níveis mais baixos reduzem mais, mas podem degradar imagens/texto.</p>
+      </div>
+
+      <button type="submit" id="submitBtn" disabled class="w-full mt-6 bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        Comprimir PDF
+      </button>
+    </form>
+
+    <div id="progressContainer" class="hidden mt-4">
+      <div class="flex justify-between text-sm text-gray-600 mb-1"><span>A comprimir...</span><span id="progressPercent">0%</span></div>
+      <div class="w-full bg-gray-200 rounded-full h-2"><div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all" style="width:0%"></div></div>
+    </div>
+
+    <!-- Resultado da compressão -->
+    <div id="resultPanel" class="hidden mt-6 p-4 rounded-xl result-card border border-indigo-200 shadow-sm">
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="font-bold text-gray-800 mb-2">✨ Resumo da compressão</h3>
+          <p class="text-sm text-gray-600">Tamanho original: <strong id="originalSizeSpan">0 KB</strong></p>
+          <p class="text-sm text-gray-600">Tamanho comprimido: <strong id="compressedSizeSpan">0 KB</strong></p>
+          <p class="text-sm font-semibold mt-1" id="reductionSpan"></p>
+        </div>
+        <button id="downloadNowBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-medium">📥 Descarregar agora</button>
+      </div>
+    </div>
+
+    <div id="errorMsg" class="hidden mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
+  </div>
+</div>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewContainer = document.getElementById('previewContainer');
+  const fileNameSpan = document.getElementById('fileName');
+  const fileSizeSpan = document.getElementById('fileSize');
+  const pdfPreview = document.getElementById('pdfPreview');
+  const clearBtn = document.getElementById('clearFileBtn');
+  const levelField = document.getElementById('levelField');
+  const levelSelect = document.getElementById('levelSelect');
+  const submitBtn = document.getElementById('submitBtn');
+  const form = document.getElementById('compressForm');
+  const progressContainer = document.getElementById('progressContainer');
+  const progressBar = document.getElementById('progressBar');
+  const progressPercent = document.getElementById('progressPercent');
+  const errorMsgDiv = document.getElementById('errorMsg');
+  const resultPanel = document.getElementById('resultPanel');
+  const originalSizeSpan = document.getElementById('originalSizeSpan');
+  const compressedSizeSpan = document.getElementById('compressedSizeSpan');
+  const reductionSpan = document.getElementById('reductionSpan');
+  const downloadNowBtn = document.getElementById('downloadNowBtn');
+
+  let selectedFile = null;
+  let lastCompressedData = null; // guardar base64 para download
+  let lastFilename = null;
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function showError(msg) {
+    errorMsgDiv.textContent = msg;
+    errorMsgDiv.classList.remove('hidden');
+    setTimeout(() => errorMsgDiv.classList.add('hidden'), 5000);
+  }
+
+  function handleFile(file) {
+    if (file.size > 50 * 1024 * 1024) {
+      showError('Ficheiro demasiado grande. Máximo 50 MB.');
+      return;
+    }
+    selectedFile = file;
+    fileNameSpan.textContent = file.name;
+    fileSizeSpan.textContent = `(${formatFileSize(file.size)})`;
+    const url = URL.createObjectURL(file);
+    pdfPreview.src = url;
+    previewContainer.classList.remove('hidden');
+    levelField.classList.remove('hidden');
+    submitBtn.disabled = false;
+    resultPanel.classList.add('hidden'); // esconder resultados antigos
+    lastCompressedData = null;
+  }
+
+  function clearFile() {
+    if (selectedFile) {
+      URL.revokeObjectURL(pdfPreview.src);
+      selectedFile = null;
+      previewContainer.classList.add('hidden');
+      levelField.classList.add('hidden');
+      submitBtn.disabled = true;
+      fileInput.value = '';
+      errorMsgDiv.classList.add('hidden');
+      resultPanel.classList.add('hidden');
+      lastCompressedData = null;
+    }
+  }
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') handleFile(file);
+    else if (file) showError('Por favor, seleccione um ficheiro PDF.');
+  });
+  fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+  clearBtn.addEventListener('click', clearFile);
+
+  async function doDownload() {
+    if (!lastCompressedData) return;
+    const byteCharacters = atob(lastCompressedData);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], {type: 'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = lastFilename || 'compressed.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  downloadNowBtn.addEventListener('click', doDownload);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!selectedFile) { showError('Nenhum ficheiro seleccionado.'); return; }
+
+    const formData = new FormData();
+    formData.append('pdf_file', selectedFile);
+    formData.append('compression_level', levelSelect.value);
+    submitBtn.disabled = true;
+    progressContainer.classList.remove('hidden');
+    errorMsgDiv.classList.add('hidden');
+    resultPanel.classList.add('hidden');
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      if (progress >= 90) clearInterval(interval);
+      progressBar.style.width = progress + '%';
+      progressPercent.innerText = progress + '%';
+    }, 200);
+
+    try {
+      const response = await fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value }
+      });
+      clearInterval(interval);
+      progressBar.style.width = '100%';
+      progressPercent.innerText = '100%';
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Erro na compressão');
+      if (!data.success) throw new Error(data.error);
+
+      // Guardar dados para download
+      lastCompressedData = data.file_data;
+      lastFilename = data.filename;
+
+      // Mostrar resumo
+      originalSizeSpan.textContent = formatFileSize(data.original_size);
+      compressedSizeSpan.textContent = formatFileSize(data.compressed_size);
+      let reductionMsg = '';
+      if (data.reduction_percent > 0) {
+        reductionMsg = `📉 Redução de ${data.reduction_percent}% (${formatFileSize(data.original_size - data.compressed_size)})`;
+      } else {
+        reductionMsg = `⚠️ Não foi possível reduzir significativamente.`;
+      }
+      reductionSpan.textContent = reductionMsg;
+      resultPanel.classList.remove('hidden');
+
+      // Opcional: descarregar automaticamente? Decidimos deixar o botão.
+      // Se quiser automático: doDownload();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      progressContainer.classList.add('hidden');
+      progressBar.style.width = '0%';
+      progressPercent.innerText = '0%';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+{% endblock %}
